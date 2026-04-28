@@ -272,15 +272,6 @@ body::after {
 .philosophy-title { color: hsl(var(--foreground)); font-size: 1.9rem; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 1.25rem; font-weight: 400; font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
 .philosophy-text { color: hsl(var(--muted-foreground)); line-height: 1.78; margin-bottom: 1rem; }
 
-/* ── Colophon ── */
-.colophon-section { position: relative; z-index: 10; padding: 7rem 0; border-top: 1px solid hsl(var(--foreground) / 0.06); }
-.colophon-grid { display: grid; gap: 4rem; align-items: end; }
-@media (min-width: 1024px) { .colophon-grid { grid-template-columns: 1.2fr 1fr; } }
-.colophon-title { font-size: clamp(1.8rem, 3.5vw, 2.6rem); margin-bottom: 1.5rem; }
-.colophon-description { color: hsl(var(--muted-foreground)); line-height: 1.78; max-width: 560px; }
-.chips-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.colophon-footer { margin-top: 5rem; padding-top: 2.25rem; border-top: 1px solid hsl(var(--foreground) / 0.06); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; font-size: 0.74rem; letter-spacing: 0.1em; color: hsl(var(--muted-foreground-deep)); font-family: 'JetBrains Mono', monospace; }
-
 /* ── Fullscreen button ── */
 .fullscreen-btn {
   position: absolute;
@@ -395,7 +386,6 @@ body::after {
           <li><a href="#play">play</a></li>
           <li><a href="#rules">rules</a></li>
           <li><a href="#controls">controls</a></li>
-          <li><a href="#colophon">colophon</a></li>
         </ul>
         <div class="nav-best mono">
           best · <span id="nav-best-score">0</span>
@@ -414,7 +404,7 @@ body::after {
               Now playing · v 1.0
             </div>
 
-            <p class="hero-subtitle mono">// arcade.classics.no_07</p>
+            <p class="hero-subtitle mono">// arcade.classics</p>
 
             <h1 class="hero-title display">
               Snake,<br/>
@@ -426,10 +416,10 @@ body::after {
             </p>
 
             <p class="hero-description">
-              A meditative reading of the 1976 arcade staple — slowed down,
-              stripped back, and rendered in warm charcoal and burnt amber.
-              No leaderboards. No timers. Just you, the grid, and the long
-              line that grows behind you.
+              SNAKE is simply one of my favorite arcade games. I already made a TUI version with linux that made it in the AUR.
+              A lot of friends also wanted to play snake and asked me if I can make it available for Windows.
+              I for myself thought that making it TUI for Windows wouldn't be the greatest idea. One reason for it was
+              that my TUI SNAKE used my terminal styling which was missing in windows. This is why I made this SNAKE website.
             </p>
 
             <div class="hero-buttons">
@@ -481,8 +471,8 @@ body::after {
           <p class="section-label">// rules.md</p>
           <h2 class="section-title">Three rules,<br/>one long tail.</h2>
           <p class="rules-description">
-            The whole point of Snake is constraint. We've kept the rules
-            monastically brief — the depth comes from the geometry of your own
+            The whole point of Snake is constraint. I've kept the rules
+            simple — everything else comes from the geometry of your own
             decisions.
           </p>
         </div>
@@ -506,7 +496,7 @@ body::after {
             <div class="rule-number display">03</div>
             <div class="rule-content">
               <div class="rule-title display">Avoid yourself.</div>
-              <p>Your own tail is the most dangerous thing on the board. Plan three moves ahead.</p>
+              <p>Your own tail is the most dangerous thing on the board.</p>
             </div>
           </li>
         </ol>
@@ -540,8 +530,8 @@ body::after {
           </div>
           <div class="control-card">
             <div class="control-key display">esc</div>
-            <div class="control-label">Take a breath</div>
-            <div class="control-sub mono">no penalty</div>
+            <div class="control-label">Take a breath and exit fullscreen.</div>
+            <div class="control-sub mono">no penalty (don't worry)W</div>
           </div>
         </div>
 
@@ -585,50 +575,13 @@ body::after {
               Slow games <span class="accent-gradient-text">are fast games</span> in disguise.
             </h3>
             <p class="philosophy-text">
-              We tuned the tick rate to a deliberate 110 milliseconds — fast
-              enough to feel responsive, slow enough that you can actually
-              see the shape your tail is drawing.
-            </p>
-            <p class="philosophy-text">
-              The board is a ritual. The score is a side effect.
+              I tuned the tick rate so that it isn't boring and slow but not to difficult and fast.
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- COLOPHON -->
-    <section id="colophon" class="colophon-section">
-      <div class="container-edit">
-        <div class="colophon-grid">
-          <div>
-            <p class="section-label">// colophon</p>
-            <h2 class="section-title colophon-title">
-              Set in <em class="accent-gradient-text">Fraunces</em>,
-              <br/>built with care.
-            </h2>
-            <p class="colophon-description">
-              Display type is Fraunces by Undercase Type. Body is Inter.
-              Mono is JetBrains Mono. Rendered on an HTML canvas at the
-              device pixel ratio. No analytics, no cookies, no ads.
-            </p>
-          </div>
-          <div class="chips-grid">
-            <span class="chip">Fraunces</span>
-            <span class="chip">Inter</span>
-            <span class="chip">JetBrains Mono</span>
-            <span class="chip">Canvas 2D</span>
-            <span class="chip">Vanilla JS</span>
-            <span class="chip">No tracking</span>
-          </div>
-        </div>
-
-        <div class="colophon-footer mono">
-          <span>© 2026 — a quiet game · made with tea</span>
-          <span>// pressed · <span id="footer-best">0</span> dots eaten at best</span>
-        </div>
-      </div>
-    </section>
 
     <script>/* ════════════════════════════════════════════════════════════════════
    snake.js — Portfolio Snake Game
@@ -863,7 +816,7 @@ body::after {
     if (next.x === food.x && next.y === food.y) {
       // Ate food — grow by GROW_AMOUNT segments
       score++;
-      growPending += GROW_AMOUNT - 1; // -1 because we already kept the head without popping
+      growPending += GROW_AMOUNT - 1; // -1 because I already kept the head without popping
       food = randCell(snake);
       updateScoreUI();
     } else if (growPending > 0) {

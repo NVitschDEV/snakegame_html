@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake — An Editorial Take on a Classic Game</title>
+    <meta name="description" content="A minimalist, editorial Snake game. Warm-noir aesthetic, arrow keys, 22×22 grid." />
+    <style>/* ════════════════════════════════════════════════════════════════════
+   NVitschDEV — Editorial Refinement (warm-noir editorial)
+   ════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --background:            240 14% 6%;
+  --bg-1:                  240 17% 8%;
+  --bg-2:                  240 16% 11%;
+  --foreground:            38 45% 92%;
+  --accent-warm:           33 73% 66%;
+  --accent-cool:           201 41% 60%;
+  --accent-clay:           14 63% 60%;
+  --muted-foreground:      36 7% 57%;
+  --muted-foreground-deep: 39 7% 33%;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+::selection { background: hsl(var(--accent-warm)); color: hsl(var(--background)); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--bg-2)); border-radius: 4px; border: 2px solid hsl(var(--background)); }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground-deep)); }
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--accent-warm) / 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, hsl(var(--accent-cool) / 0.08), transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.96 0 0 0 0 0.93 0 0 0 0 0.88 0 0 0 0.4 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+  opacity: 0.04; mix-blend-mode: overlay; pointer-events: none; z-index: 0;
+}
+
+/* ── Typography helpers ── */
+.display { font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
+.mono    { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Layout ── */
+.container-edit { max-width: 1180px; margin: 0 auto; padding: 0 2rem; }
+
+/* ── Orbs ── */
+.orb { position: fixed; border-radius: 9999px; filter: blur(140px); pointer-events: none; z-index: 0; opacity: 0.12; }
+#orb-warm { width: 560px; height: 560px; top: -176px; right: -160px; background: hsl(var(--accent-warm)); }
+#orb-cool { width: 480px; height: 480px; bottom: 8%; left: -160px; background: hsl(var(--accent-cool)); }
+
+/* ── Navbar ── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: hsl(var(--background) / 0.70);
+  border-bottom: 1px solid hsl(var(--foreground) / 0.06);
+}
+.navbar-inner { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; }
+
+.nav-brand { font-style: italic; color: hsl(var(--foreground)); font-size: 1.15rem; font-weight: 500; letter-spacing: -0.02em; text-decoration: none; }
+.nav-brand-accent { font-style: normal; font-weight: 400; color: hsl(var(--accent-warm)); }
+
+.nav-links { display: none; list-style: none; align-items: center; gap: 2.25rem; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: lowercase; color: hsl(var(--muted-foreground)); }
+@media (min-width: 768px) { .nav-links { display: flex; } }
+.nav-links a { color: inherit; text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: hsl(var(--foreground)); }
+
+.nav-best { display: none; font-size: 0.72rem; color: hsl(var(--muted-foreground)); border: 1px solid hsl(var(--foreground) / 0.08); border-radius: 9999px; padding: 0.375rem 0.875rem; }
+@media (min-width: 768px) { .nav-best { display: block; } }
+
+/* ── Hero ── */
+.hero-section { position: relative; z-index: 10; padding-top: 9rem; padding-bottom: 6rem; }
+
+.hero-grid { display: grid; gap: 5rem; align-items: center; }
+@media (min-width: 1024px) { .hero-grid { grid-template-columns: 1.05fr auto; } }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 0.625rem;
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.18em;
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 9999px; padding: 0.375rem 1rem 0.375rem 0.875rem;
+  margin-bottom: 2rem;
+  background: hsl(var(--foreground) / 0.025);
+  backdrop-filter: blur(8px);
+}
+
+.hero-subtitle { font-size: 0.85rem; color: hsl(var(--muted-foreground-deep)); margin-bottom: 0.875rem; }
+
+.hero-title {
+  font-weight: 300; line-height: 0.92; letter-spacing: -0.045em;
+  font-size: clamp(3rem, 8.5vw, 6.8rem); margin-bottom: 1.5rem;
+  color: hsl(var(--foreground)); font-style: italic;
+}
+
+.hero-typed { font-size: clamp(0.85rem, 1.4vw, 1rem); letter-spacing: 0.05em; margin-bottom: 2.25rem; min-height: 1.7em; color: hsl(var(--muted-foreground)); }
+
+.hero-description { color: hsl(var(--muted-foreground)); font-size: 1.08rem; line-height: 1.75; max-width: 540px; margin-bottom: 3rem; }
+
+.hero-buttons { display: flex; flex-wrap: wrap; gap: 0.875rem; }
+
+/* ── Buttons ── */
+.btn-primary-edit {
+  display: inline-flex; align-items: center; gap: 0.625rem;
+  padding: 0.875rem 1.75rem; border-radius: 9999px; font-size: 0.86rem; font-weight: 500;
+  text-decoration: none; background: hsl(var(--foreground)); color: hsl(var(--background));
+  box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 12px 32px -12px hsl(var(--foreground) / 0.25);
+  transition: all 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.btn-primary-edit:hover {
+  background: hsl(var(--accent-warm)); color: hsl(var(--background));
+  transform: translateY(-2px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 18px 40px -10px hsl(var(--accent-warm) / 0.45);
+}
+
+.btn-ghost-edit {
+  display: inline-flex; align-items: center; gap: 0.625rem;
+  padding: 0.875rem 1.75rem; border-radius: 9999px; font-size: 0.86rem; font-weight: 500;
+  text-decoration: none; background: transparent; color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--foreground) / 0.08); backdrop-filter: blur(8px);
+  transition: all 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.btn-ghost-edit:hover {
+  border-color: hsl(var(--muted-foreground)); color: hsl(var(--accent-warm));
+  transform: translateY(-2px); background: hsl(var(--foreground) / 0.025);
+}
+
+/* ── Game ── */
+.game-wrapper { width: 100%; max-width: 440px; margin: 0 auto; }
+.game-container { position: relative; }
+
+.spin-ring-wrapper { position: absolute; inset: -1px; border-radius: 1rem; overflow: hidden; opacity: 0.6; }
+.spin-ring {
+  position: absolute; inset: -100%;
+  background: conic-gradient(from 90deg, hsl(var(--accent-warm)), hsl(var(--accent-cool)), hsl(var(--accent-clay)), hsl(var(--accent-warm)));
+  filter: blur(0.5px); animation: spin-ring 14s linear infinite;
+}
+
+.canvas-shell { position: relative; border-radius: 1rem; background: hsl(var(--background)); padding: 6px; }
+#snake-canvas { width: 100%; aspect-ratio: 1 / 1; border-radius: 0.75rem; display: block; }
+
+.game-hint { margin-top: 1.75rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.18em; color: hsl(var(--muted-foreground-deep)); text-align: center; }
+.hint-key { color: hsl(var(--accent-warm)); }
+
+/* Stat badges */
+.stat-badge {
+  position: absolute; border-radius: 0.75rem; padding: 0.625rem 1rem;
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: hsl(var(--muted-foreground-deep)); white-space: nowrap;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: none;
+}
+@media (min-width: 640px) { .stat-badge { display: block; } }
+.stat-badge .display { font-style: italic; font-weight: 400; font-size: 1.4rem; display: block; line-height: 1; margin-bottom: 0.25rem; color: hsl(var(--foreground)); }
+.stat-score { top: -14px; left: -36px; }
+.stat-best  { bottom: -14px; right: -32px; }
+
+/* ── Glass Card ── */
+.glass-card {
+  background: linear-gradient(180deg, hsl(var(--foreground) / 0.025), transparent);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+
+/* ── Section Labels ── */
+.section-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.22em;
+  color: hsl(var(--accent-warm)); text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;
+}
+.section-label::before { content: ''; width: 24px; height: 1px; background: hsl(var(--accent-warm)); display: inline-block; flex-shrink: 0; }
+
+.section-title { font-family: 'Fraunces', serif; font-weight: 400; font-style: italic; letter-spacing: -0.025em; line-height: 1.05; color: hsl(var(--foreground)); font-variation-settings: "opsz" 144; }
+
+/* ── Accent Gradient ── */
+.accent-gradient-text {
+  color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(115deg, hsl(var(--accent-warm)), hsl(var(--accent-clay)) 60%, hsl(var(--accent-warm)));
+  font-style: italic; font-weight: 400;
+}
+
+/* ── Chips ── */
+.chip {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.375rem 1rem; border-radius: 9999px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.74rem;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  color: hsl(var(--muted-foreground)); transition: all 0.3s ease; cursor: default;
+}
+.chip:hover { border-color: hsl(var(--accent-warm)); color: hsl(var(--accent-warm)); background: hsl(var(--accent-warm) / 0.05); }
+
+/* ── Pulse dot ── */
+.pulse-dot {
+  width: 6px; height: 6px; border-radius: 9999px;
+  background: hsl(var(--accent-warm)); box-shadow: 0 0 10px hsl(var(--accent-warm) / 0.5);
+  animation: pulse-dot 2.4s ease-in-out infinite; flex-shrink: 0;
+}
+
+/* ── Rules ── */
+.rules-section { position: relative; z-index: 10; padding: 8rem 0; border-top: 1px solid hsl(var(--foreground) / 0.06); border-bottom: 1px solid hsl(var(--foreground) / 0.06); background: hsl(var(--bg-1) / 0.40); }
+
+.rules-grid { display: grid; gap: 5rem; }
+@media (min-width: 1024px) { .rules-grid { grid-template-columns: 1fr 1.2fr; } }
+
+.rules-intro .section-title { font-size: clamp(2.2rem, 5vw, 3.6rem); margin-bottom: 1.25rem; }
+.rules-description { color: hsl(var(--muted-foreground)); font-size: 1.05rem; line-height: 1.7; max-width: 520px; }
+
+.rules-list { list-style: none; }
+.rule-item { display: grid; grid-template-columns: auto 1fr; gap: 1.75rem; padding: 1.75rem 0; border-bottom: 1px solid hsl(var(--foreground) / 0.08); }
+.rule-item:last-child { border-bottom: none; }
+.rule-number { font-style: italic; color: hsl(var(--accent-warm)); font-size: 2.2rem; line-height: 1; font-weight: 300; font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
+.rule-title { font-style: italic; color: hsl(var(--foreground)); font-size: 1.5rem; margin-bottom: 0.5rem; font-weight: 400; font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
+.rule-content p { color: hsl(var(--muted-foreground)); line-height: 1.7; }
+
+/* ── Controls ── */
+.controls-section { position: relative; z-index: 10; padding: 8rem 0; }
+.controls-title { font-size: clamp(2.2rem, 5vw, 3.6rem); margin-bottom: 1.25rem; }
+.controls-description { color: hsl(var(--muted-foreground)); font-size: 1.05rem; line-height: 1.7; max-width: 580px; margin-bottom: 4rem; }
+
+.controls-grid { display: grid; gap: 1px; background: hsl(var(--foreground) / 0.08); border: 1px solid hsl(var(--foreground) / 0.08); border-radius: 1rem; overflow: hidden; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 1024px) { .controls-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.control-card { background: hsl(var(--bg-1)); padding: 2.25rem; display: flex; flex-direction: column; }
+.control-key { font-style: italic; color: hsl(var(--foreground)); font-size: 2.6rem; line-height: 1; margin-bottom: 1.75rem; font-weight: 300; font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
+.control-label { color: hsl(var(--foreground)); font-size: 1.05rem; margin-bottom: 0.375rem; }
+.control-sub { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.12em; color: hsl(var(--muted-foreground-deep)); font-family: 'JetBrains Mono', monospace; }
+
+/* Stats lower */
+.stats-lower-grid { margin-top: 5rem; display: grid; gap: 3rem; align-items: start; }
+@media (min-width: 1024px) { .stats-lower-grid { grid-template-columns: 1.4fr 1fr; } }
+
+.stats-card { border-radius: 18px; padding: 2.25rem; }
+.stats-card-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1.5rem; margin-bottom: 1.75rem; border-bottom: 1px solid hsl(var(--foreground) / 0.08); }
+.stats-card-title { color: hsl(var(--foreground)); font-size: 1.2rem; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 0.125rem; font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
+.stats-card-sub { font-size: 0.74rem; color: hsl(var(--muted-foreground-deep)); letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; }
+
+.live-chip { padding: 0.25rem 0.75rem; font-size: 0.7rem; }
+
+.stats-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.875rem 0; border-bottom: 1px solid hsl(var(--foreground) / 0.08); gap: 1rem; }
+.stats-row.last { border-bottom: none; }
+.stats-row-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(var(--muted-foreground-deep)); white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+.stats-row-value { color: hsl(var(--foreground)); font-weight: 500; font-size: 0.92rem; text-align: right; }
+
+.philosophy-title { color: hsl(var(--foreground)); font-size: 1.9rem; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 1.25rem; font-weight: 400; font-family: 'Fraunces', serif; font-variation-settings: "opsz" 144; }
+.philosophy-text { color: hsl(var(--muted-foreground)); line-height: 1.78; margin-bottom: 1rem; }
+
+/* ── Colophon ── */
+.colophon-section { position: relative; z-index: 10; padding: 7rem 0; border-top: 1px solid hsl(var(--foreground) / 0.06); }
+.colophon-grid { display: grid; gap: 4rem; align-items: end; }
+@media (min-width: 1024px) { .colophon-grid { grid-template-columns: 1.2fr 1fr; } }
+.colophon-title { font-size: clamp(1.8rem, 3.5vw, 2.6rem); margin-bottom: 1.5rem; }
+.colophon-description { color: hsl(var(--muted-foreground)); line-height: 1.78; max-width: 560px; }
+.chips-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.colophon-footer { margin-top: 5rem; padding-top: 2.25rem; border-top: 1px solid hsl(var(--foreground) / 0.06); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; font-size: 0.74rem; letter-spacing: 0.1em; color: hsl(var(--muted-foreground-deep)); font-family: 'JetBrains Mono', monospace; }
+
+/* ── Fullscreen button ── */
+.fullscreen-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--foreground) / 0.12);
+  background: hsl(var(--background) / 0.70);
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+.fullscreen-btn:hover {
+  border-color: hsl(var(--accent-warm));
+  color: hsl(var(--accent-warm));
+  background: hsl(var(--background) / 0.90);
+}
+
+/* Fullscreen overlay mode */
+.game-container.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: hsl(var(--background)) !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+.game-container.is-fullscreen .spin-ring-wrapper {
+  display: none;
+}
+
+.game-container.is-fullscreen .canvas-shell {
+  width: min(90vh, 90vw);
+  height: min(90vh, 90vw);
+  padding: 8px;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 1rem;
+  background: hsl(var(--background));
+}
+
+.game-container.is-fullscreen #snake-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.game-container.is-fullscreen .stat-badge {
+  display: block !important;
+}
+
+.game-container.is-fullscreen .stat-score {
+  top: 24px;
+  left: 24px;
+}
+
+.game-container.is-fullscreen .stat-best {
+  bottom: 24px;
+  right: 24px;
+}
+
+.game-container.is-fullscreen .fullscreen-btn {
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+/* ── Animations ── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+@keyframes spin-ring { to { transform: rotate(360deg); } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.cursor-blink {
+  display: inline-block; width: 8px; height: 1em;
+  background: hsl(var(--accent-warm)); margin-left: 2px;
+  vertical-align: text-bottom; animation: blink 1.1s step-end infinite;
+}
+</style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+
+    <!-- Background orbs -->
+    <div class="orb" id="orb-warm"></div>
+    <div class="orb" id="orb-cool"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="container-edit navbar-inner">
+        <a href="#hero" class="nav-brand display">
+          snake<span class="nav-brand-accent">.edit</span>
+        </a>
+        <ul class="nav-links mono">
+          <li><a href="#play">play</a></li>
+          <li><a href="#rules">rules</a></li>
+          <li><a href="#controls">controls</a></li>
+          <li><a href="#colophon">colophon</a></li>
+        </ul>
+        <div class="nav-best mono">
+          best · <span id="nav-best-score">0</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- HERO + GAME -->
+    <section id="hero" class="hero-section">
+      <div class="container-edit">
+        <div class="hero-grid">
+
+          <div class="hero-text">
+            <div class="status-badge mono">
+              <span class="pulse-dot"></span>
+              Now playing · v 1.0
+            </div>
+
+            <p class="hero-subtitle mono">// arcade.classics.no_07</p>
+
+            <h1 class="hero-title display">
+              Snake,<br/>
+              <span class="accent-gradient-text">refined.</span>
+            </h1>
+
+            <p class="hero-typed mono">
+              <span id="typed-text"></span><span class="cursor-blink"></span>
+            </p>
+
+            <p class="hero-description">
+              A meditative reading of the 1976 arcade staple — slowed down,
+              stripped back, and rendered in warm charcoal and burnt amber.
+              No leaderboards. No timers. Just you, the grid, and the long
+              line that grows behind you.
+            </p>
+
+            <div class="hero-buttons">
+              <a href="#play" class="btn-primary-edit">▸ Play now</a>
+              <a href="#rules" class="btn-ghost-edit">Read the rules</a>
+            </div>
+          </div>
+
+          <div id="play" class="game-wrapper">
+            <div class="game-container">
+              <div class="spin-ring-wrapper">
+                <div class="spin-ring"></div>
+              </div>
+              <div class="canvas-shell">
+                <canvas id="snake-canvas" aria-label="Snake game board"></canvas>
+              </div>
+              <!-- floating stats -->
+              <div class="stat-badge stat-score glass-card mono">
+                <strong class="display" id="current-score">0</strong>
+                score
+              </div>
+              <div class="stat-badge stat-best glass-card mono">
+                <strong class="display" id="current-best">0</strong>
+                best
+              </div>
+              <!-- fullscreen button -->
+              <button id="fullscreen-btn" class="fullscreen-btn mono" title="Fullscreen (F)">
+                <svg id="fs-icon-expand" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 6V1H6M10 1H15V6M15 10V15H10M6 15H1V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg id="fs-icon-shrink" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
+                  <path d="M6 1V6H1M15 6H10V1M10 15V10H15M1 10H6V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            <div class="game-hint mono">
+              press <span class="hint-key">space</span> to start · arrows to steer · <span class="hint-key">F</span> fullscreen
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- RULES -->
+    <section id="rules" class="rules-section">
+      <div class="container-edit rules-grid">
+        <div class="rules-intro">
+          <p class="section-label">// rules.md</p>
+          <h2 class="section-title">Three rules,<br/>one long tail.</h2>
+          <p class="rules-description">
+            The whole point of Snake is constraint. We've kept the rules
+            monastically brief — the depth comes from the geometry of your own
+            decisions.
+          </p>
+        </div>
+
+        <ol class="rules-list">
+          <li class="rule-item">
+            <div class="rule-number display">01</div>
+            <div class="rule-content">
+              <div class="rule-title display">Eat the dot.</div>
+              <p>A single terracotta point appears somewhere on the 22×22 board. Reach it and your tail grows by one.</p>
+            </div>
+          </li>
+          <li class="rule-item">
+            <div class="rule-number display">02</div>
+            <div class="rule-content">
+              <div class="rule-title display">Mind the walls.</div>
+              <p>There is no wraparound. The board has edges, and edges are final.</p>
+            </div>
+          </li>
+          <li class="rule-item">
+            <div class="rule-number display">03</div>
+            <div class="rule-content">
+              <div class="rule-title display">Avoid yourself.</div>
+              <p>Your own tail is the most dangerous thing on the board. Plan three moves ahead.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- CONTROLS + STATS -->
+    <section id="controls" class="controls-section">
+      <div class="container-edit">
+        <p class="section-label">// controls</p>
+        <h2 class="section-title controls-title">A quiet keyboard.</h2>
+        <p class="controls-description">
+          Four directions, one pause. That's the entire instrument.
+        </p>
+
+        <div class="controls-grid">
+          <div class="control-card">
+            <div class="control-key display">↑ ↓ ← →</div>
+            <div class="control-label">Steer</div>
+            <div class="control-sub mono">or W A S D</div>
+          </div>
+          <div class="control-card">
+            <div class="control-key display">␣</div>
+            <div class="control-label">Pause / Resume</div>
+            <div class="control-sub mono">spacebar</div>
+          </div>
+          <div class="control-card">
+            <div class="control-key display">↵</div>
+            <div class="control-label">Restart</div>
+            <div class="control-sub mono">after game over · space</div>
+          </div>
+          <div class="control-card">
+            <div class="control-key display">esc</div>
+            <div class="control-label">Take a breath</div>
+            <div class="control-sub mono">no penalty</div>
+          </div>
+        </div>
+
+        <!-- live stats card -->
+        <div class="stats-lower-grid">
+          <div class="glass-card stats-card">
+            <div class="stats-card-header">
+              <div>
+                <div class="stats-card-title display">This session</div>
+                <div class="stats-card-sub mono">@local · in browser</div>
+              </div>
+              <span class="chip live-chip">live</span>
+            </div>
+            <div class="stats-rows">
+              <div class="stats-row">
+                <span class="stats-row-label mono">Current score</span>
+                <span class="stats-row-value" id="stats-score">0</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-row-label mono">Personal best</span>
+                <span class="stats-row-value" id="stats-best">0</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-row-label mono">Grid</span>
+                <span class="stats-row-value">22 × 22 cells</span>
+              </div>
+              <div class="stats-row">
+                <span class="stats-row-label mono">Tick rate</span>
+                <span class="stats-row-value">180 ms</span>
+              </div>
+              <div class="stats-row last">
+                <span class="stats-row-label mono">Persistence</span>
+                <span class="stats-row-value">localStorage only</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="philosophy-block">
+            <p class="section-label">// philosophy</p>
+            <h3 class="philosophy-title display">
+              Slow games <span class="accent-gradient-text">are fast games</span> in disguise.
+            </h3>
+            <p class="philosophy-text">
+              We tuned the tick rate to a deliberate 110 milliseconds — fast
+              enough to feel responsive, slow enough that you can actually
+              see the shape your tail is drawing.
+            </p>
+            <p class="philosophy-text">
+              The board is a ritual. The score is a side effect.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLOPHON -->
+    <section id="colophon" class="colophon-section">
+      <div class="container-edit">
+        <div class="colophon-grid">
+          <div>
+            <p class="section-label">// colophon</p>
+            <h2 class="section-title colophon-title">
+              Set in <em class="accent-gradient-text">Fraunces</em>,
+              <br/>built with care.
+            </h2>
+            <p class="colophon-description">
+              Display type is Fraunces by Undercase Type. Body is Inter.
+              Mono is JetBrains Mono. Rendered on an HTML canvas at the
+              device pixel ratio. No analytics, no cookies, no ads.
+            </p>
+          </div>
+          <div class="chips-grid">
+            <span class="chip">Fraunces</span>
+            <span class="chip">Inter</span>
+            <span class="chip">JetBrains Mono</span>
+            <span class="chip">Canvas 2D</span>
+            <span class="chip">Vanilla JS</span>
+            <span class="chip">No tracking</span>
+          </div>
+        </div>
+
+        <div class="colophon-footer mono">
+          <span>© 2026 — a quiet game · made with tea</span>
+          <span>// pressed · <span id="footer-best">0</span> dots eaten at best</span>
+        </div>
+      </div>
+    </section>
+
+    <script>/* ════════════════════════════════════════════════════════════════════
+   snake.js — Portfolio Snake Game
+   Fix: snake grows by 3 segments when eating food (instead of 1)
+   ════════════════════════════════════════════════════════════════════ */
+
+(function () {
+  "use strict";
+
+  const COLS = 22;
+  const ROWS = 22;
+  const TICK_MS = 180;  // slowed down from 110ms
+  const GROW_AMOUNT = 1; // grow by exactly 1 segment per food
+
+  const DIRS = {
+    up:    { x: 0,  y: -1 },
+    down:  { x: 0,  y:  1 },
+    left:  { x: -1, y:  0 },
+    right: { x: 1,  y:  0 },
+  };
+
+  const OPPOSITE = { up: "down", down: "up", left: "right", right: "left" };
+
+  // ── State ──────────────────────────────────────────────────────────
+
+  let snake = [];
+  let dir = "right";
+  let queued = null;
+  let food = { x: 16, y: 11 };
+  let running = false;
+  let gameOver = false;
+  let growPending = 0; // segments still to be added
+  let score = 0;
+  let best = parseInt(localStorage.getItem("snake-best") || "0", 10);
+  let status = "idle"; // idle | running | paused | over
+
+  // ── DOM ────────────────────────────────────────────────────────────
+
+  const canvas = document.getElementById("snake-canvas");
+  const ctx = canvas.getContext("2d");
+
+  const elScore      = document.getElementById("current-score");
+  const elBest       = document.getElementById("current-best");
+  const elNavBest    = document.getElementById("nav-best-score");
+  const elStatsScore = document.getElementById("stats-score");
+  const elStatsBest  = document.getElementById("stats-best");
+  const elFooterBest = document.getElementById("footer-best");
+  const elTyped      = document.getElementById("typed-text");
+
+  // ── Helpers ────────────────────────────────────────────────────────
+
+  function getCssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function randCell(exclude) {
+    while (true) {
+      const c = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+      if (!exclude.some(p => p.x === c.x && p.y === c.y)) return c;
+    }
+  }
+
+  function updateScoreUI() {
+    const s = String(score);
+    const b = String(best);
+    if (elScore)      elScore.textContent      = s;
+    if (elBest)       elBest.textContent        = b;
+    if (elNavBest)    elNavBest.textContent      = b;
+    if (elStatsScore) elStatsScore.textContent  = s;
+    if (elStatsBest)  elStatsBest.textContent   = b;
+    if (elFooterBest) elFooterBest.textContent  = b;
+  }
+
+  // ── Reset ──────────────────────────────────────────────────────────
+
+  function reset() {
+    snake = [{ x: 11, y: 11 }, { x: 10, y: 11 }, { x: 9, y: 11 }];
+    dir = "right";
+    queued = null;
+    food = randCell(snake);
+    gameOver = false;
+    growPending = 0;
+    score = 0;
+    updateScoreUI();
+  }
+
+  // ── Draw ───────────────────────────────────────────────────────────
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const cssSize = canvas.clientWidth;
+    if (canvas.width !== cssSize * dpr) {
+      canvas.width  = cssSize * dpr;
+      canvas.height = cssSize * dpr;
+    }
+    const cell = (cssSize * dpr) / COLS;
+
+    // colour tokens — variables store raw "H S% L%" channel strings
+    const bg1  = `hsl(${getCssVar("--bg-1")})`;
+    const bg2  = `hsl(${getCssVar("--bg-2")})`;
+    const fg   = `hsl(${getCssVar("--foreground")})`;
+    const warm = `hsl(${getCssVar("--accent-warm")})`;
+    const clay = `hsl(${getCssVar("--accent-clay")})`;
+    const muted = `hsl(${getCssVar("--muted-foreground-deep")})`;
+
+    // background
+    ctx.fillStyle = bg1;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // subtle checkerboard
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if ((x + y) % 2 === 0) {
+          ctx.fillStyle = bg2;
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+      }
+    }
+
+    // grid hairlines
+    ctx.strokeStyle = `hsl(${getCssVar("--foreground")} / 0.04)`;
+    ctx.lineWidth = 1;
+    for (let i = 1; i < COLS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, canvas.height); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * cell); ctx.lineTo(canvas.width, i * cell); ctx.stroke();
+    }
+
+    // food — terracotta dot with glow
+    const fx = food.x * cell + cell / 2;
+    const fy = food.y * cell + cell / 2;
+    const r  = cell * 0.32;
+    const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, r * 2.4);
+    grad.addColorStop(0, clay);
+    grad.addColorStop(1, "transparent");
+    ctx.fillStyle = grad;
+    ctx.fillRect(fx - r * 2.4, fy - r * 2.4, r * 4.8, r * 4.8);
+    ctx.fillStyle = clay;
+    ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI * 2); ctx.fill();
+
+    // snake
+    snake.forEach((seg, i) => {
+      const isHead = i === 0;
+      const pad    = cell * 0.12;
+      const sx     = seg.x * cell + pad;
+      const sy     = seg.y * cell + pad;
+      const s      = cell - pad * 2;
+      const radius = cell * 0.22;
+
+      const warmH = getCssVar("--accent-warm");
+      ctx.fillStyle = isHead
+        ? warm
+        : `hsl(${warmH} / ${Math.max(0.10, 0.85 - i * 0.012)})`;
+
+      // rounded rect
+      ctx.beginPath();
+      ctx.moveTo(sx + radius, sy);
+      ctx.arcTo(sx + s, sy,     sx + s, sy + s, radius);
+      ctx.arcTo(sx + s, sy + s, sx,     sy + s, radius);
+      ctx.arcTo(sx,     sy + s, sx,     sy,     radius);
+      ctx.arcTo(sx,     sy,     sx + s, sy,     radius);
+      ctx.closePath();
+      ctx.fill();
+
+      if (isHead) {
+        // eye
+        ctx.fillStyle = `hsl(${getCssVar("--background")})`;
+        const dv = DIRS[dir];
+        const ex = sx + s / 2 + dv.x * s * 0.22;
+        const ey = sy + s / 2 + dv.y * s * 0.22;
+        ctx.beginPath(); ctx.arc(ex, ey, cell * 0.09, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+
+    // overlays when not running
+    if (status !== "running") {
+      ctx.fillStyle = `hsl(${getCssVar("--background")} / 0.72)`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = fg;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      let title = "", sub = "";
+      if (status === "idle")   { title = "press space to begin"; sub = "arrow keys · wasd"; }
+      if (status === "paused") { title = "paused";               sub = "press space to resume"; }
+      if (status === "over")   { title = "game over";            sub = "press space to restart"; }
+
+      ctx.font = `italic 400 ${Math.round(cell * 1.3)}px Fraunces, serif`;
+      ctx.fillText(title, canvas.width / 2, canvas.height / 2 - cell * 0.4);
+      ctx.fillStyle = muted;
+      ctx.font = `400 ${Math.round(cell * 0.55)}px "JetBrains Mono", monospace`;
+      ctx.fillText(sub, canvas.width / 2, canvas.height / 2 + cell * 1.1);
+
+      // hairline
+      ctx.strokeStyle = warm;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2 - cell * 2, canvas.height / 2 + cell * 0.3);
+      ctx.lineTo(canvas.width / 2 + cell * 2, canvas.height / 2 + cell * 0.3);
+      ctx.stroke();
+    }
+  }
+
+  // ── Tick ───────────────────────────────────────────────────────────
+
+  function tick() {
+    if (!running || gameOver) return;
+
+    // apply queued direction
+    if (queued && queued !== OPPOSITE[dir]) {
+      dir = queued;
+    }
+    queued = null;
+
+    const dv   = DIRS[dir];
+    const head = snake[0];
+    const next = { x: head.x + dv.x, y: head.y + dv.y };
+
+    // wall collision
+    if (next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS) {
+      endGame(); return;
+    }
+
+    // self collision
+    if (snake.some(s => s.x === next.x && s.y === next.y)) {
+      endGame(); return;
+    }
+
+    snake.unshift(next);
+
+    if (next.x === food.x && next.y === food.y) {
+      // Ate food — grow by GROW_AMOUNT segments
+      score++;
+      growPending += GROW_AMOUNT - 1; // -1 because we already kept the head without popping
+      food = randCell(snake);
+      updateScoreUI();
+    } else if (growPending > 0) {
+      // Still growing from a previous eat — don't pop tail
+      growPending--;
+    } else {
+      snake.pop();
+    }
+
+    draw();
+  }
+
+  // ── Game over ──────────────────────────────────────────────────────
+
+  function endGame() {
+    running  = false;
+    gameOver = true;
+    status   = "over";
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem("snake-best", String(best));
+    }
+    updateScoreUI();
+    draw();
+  }
+
+  // ── Game loop ──────────────────────────────────────────────────────
+
+  let lastTick = performance.now();
+
+  function loop(t) {
+    if (t - lastTick >= TICK_MS) {
+      lastTick = t;
+      tick();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+
+  // ── Keyboard ───────────────────────────────────────────────────────
+
+  window.addEventListener("keydown", function (e) {
+    const k = e.key.toLowerCase();
+
+    const dirMap = {
+      arrowup:    "up",    w: "up",
+      arrowdown:  "down",  s: "down",
+      arrowleft:  "left",  a: "left",
+      arrowright: "right", d: "right",
+    };
+
+    if (dirMap[k]) {
+      e.preventDefault();
+      const want = dirMap[k];
+      if (want !== OPPOSITE[dir]) queued = want;
+      if (status === "idle") {
+        running = true;
+        status  = "running";
+      }
+      return;
+    }
+
+    if (k === " " || k === "spacebar") {
+      e.preventDefault();
+      if (status === "idle") {
+        running = true; status = "running";
+      } else if (status === "running") {
+        running = false; status = "paused"; draw();
+      } else if (status === "paused") {
+        running = true; status = "running";
+      } else if (status === "over") {
+        reset(); running = true; status = "running";
+      }
+    }
+
+    if (k === "f") {
+      toggleFullscreen();
+    }
+  });
+
+  // ── Fullscreen ─────────────────────────────────────────────────────
+
+  const gameContainer = document.querySelector(".game-container");
+  const fsBtn         = document.getElementById("fullscreen-btn");
+  const fsIconExpand  = document.getElementById("fs-icon-expand");
+  const fsIconShrink  = document.getElementById("fs-icon-shrink");
+
+  function enterFullscreen() {
+    gameContainer.classList.add("is-fullscreen");
+    fsIconExpand.style.display = "none";
+    fsIconShrink.style.display = "";
+    // Trigger resize so canvas redraws at new size
+    setTimeout(() => { draw(); }, 50);
+  }
+
+  function exitFullscreen() {
+    gameContainer.classList.remove("is-fullscreen");
+    fsIconExpand.style.display = "";
+    fsIconShrink.style.display = "none";
+    setTimeout(() => { draw(); }, 50);
+  }
+
+  function toggleFullscreen() {
+    if (gameContainer.classList.contains("is-fullscreen")) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  }
+
+  fsBtn.addEventListener("click", toggleFullscreen);
+
+  // Close fullscreen on Escape
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && gameContainer.classList.contains("is-fullscreen")) {
+      exitFullscreen();
+    }
+  });
+
+  // ── Resize observer ────────────────────────────────────────────────
+
+  const ro = new ResizeObserver(() => draw());
+  ro.observe(canvas);
+
+  // ── Typing animation ───────────────────────────────────────────────
+
+  const PHRASES = [
+    "Eat. Grow. Don't bite yourself.",
+    "A study in restraint.",
+    "Twenty-two by twenty-two.",
+    "Built on Arch, btw.",
+    "One pixel at a time.",
+  ];
+
+  (function typed() {
+    let i = 0, c = 0, deleting = false;
+
+    function tick() {
+      const cur = PHRASES[i];
+      if (deleting) {
+        c--;
+        elTyped.textContent = cur.slice(0, c);
+        if (c === 0) {
+          deleting = false;
+          i = (i + 1) % PHRASES.length;
+          setTimeout(tick, 450);
+          return;
+        }
+        setTimeout(tick, 28);
+      } else {
+        c++;
+        elTyped.textContent = cur.slice(0, c);
+        if (c === cur.length) {
+          deleting = true;
+          setTimeout(tick, 2000);
+          return;
+        }
+        setTimeout(tick, 55);
+      }
+    }
+
+    setTimeout(tick, 600);
+  })();
+
+  // ── Init ───────────────────────────────────────────────────────────
+
+  reset();
+  updateScoreUI();
+  draw();
+
+})();
+</script>
+  </body>
+</html>
